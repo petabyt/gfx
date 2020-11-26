@@ -1,51 +1,35 @@
-/*
-A simple graphics library for CSE 20211 by Douglas Thain
+#include <X11/Xlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
-This work is licensed under a Creative Commons Attribution 4.0 International License.  https://creativecommons.org/licenses/by/4.0/
+enum InteractionType {
+	MOUSE, KEY
+};
 
-For course assignments, you should not change this file.
-For complete documentation, see:
-http://www.nd.edu/~dthain/courses/cse20211/fall2013/gfx
-Version 3, 11/07/2012 - Now much faster at changing colors rapidly.
-Version 2, 9/23/2011 - Fixes a bug that could result in jerky animation.
-*/
+struct gfx_interaction {
+	int type;
+	int value;
+	unsigned int coord[2];
+};
 
-#ifndef GFX_H
-#define GFX_H
+struct gfx_window {
+	Window window;
+	GC canvas;
+	Colormap colors;
+	bool fastMode;
+};
 
-/* Open a new graphics window. */
-void gfxOpen( int width, int height, const char *title );
+struct gfx_window gfx_open(int width, int height, const char *title);
 
-/* Draw a point at (x,y) */
-void gfxPoint( int x, int y );
+void gfx_pixel(struct gfx_window *window, int x, int y);
+void gfx_line(struct gfx_window *window, int x1, int y1, int x2, int y2);
 
-/* Draw a line from (x1,y1) to (x2,y2) */
-void gfxLine( int x1, int y1, int x2, int y2 );
+void gfx_setColor(struct gfx_window *window, int r, int g, int b);
+void gfx_clear(struct gfx_window *window);
+void gfx_setBackground(struct gfx_window *window, int r, int g, int b);
 
-/* Change the current drawing color. */
-void gfxColor( int red, int green, int blue );
-
-/* Clear the graphics window to the background color. */
-void gfxClear();
-
-/* Change the current background color. */
-void gfxClear_color( int red, int green, int blue );
-
-/* Wait for the user to press a key or mouse button. */
-char gfxWait();
-
-/* Return the X and Y coordinates of the last event. */
-int gfxXpos();
-int gfxYpos();
-
-/* Return the X and Y dimensions of the window. */
-int gfxXsize();
-int gfxYsize();
-
-/* Check to see if an event is waiting. */
-int gfxEventWaiting();
-
-/* Flush all previous output to the window. */
-void gfxFlush();
-
-#endif
+bool gfxEventWaiting();
+struct gfx_interaction gfx_event();
+void gfx_flush();

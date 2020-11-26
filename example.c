@@ -2,26 +2,28 @@
 #include "gfx.h"
 
 int main() {
-	char c;
-
 	// Open a new window for drawing.
-	gfxOpen(500 ,500, "Testing example");
+	struct gfx_window window = gfx_open(500, 500, "Testing example");
+
 
 	// Set the current drawing color to green.
-	gfxColor(0, 50, 50);
-
-	// Draw a triangle on the screen.
-	gfxLine(100, 100, 200, 100);
-	gfxLine(200, 100, 150, 150);
-	gfxLine(150, 150, 100, 100);
-
+	gfx_setColor(&window, 255, 0, 0);
+	gfx_pixel(&window, 10, 10);
+	
 	while(1) {
 		// Wait for the user to press a character.
-		c = gfxWait();
+		struct gfx_interaction ia = gfx_event();
 
-		// Quit if it is the letter q.
-		if(c == 'q') break;
+		if (ia.type == KEY) {
+			// Quit if it is the letter q.
+			if (ia.value == 'q') {
+				break;
+			} else {
+				printf("You pressed: %c\n", ia.value);
+			}	
+		} else if (ia.type == MOUSE) {
+			printf("Click: %d: [%d, %d]\n", ia.value, ia.coord[0], ia.coord[1]);
+		}
 	}
-
 	return 0;
 }
