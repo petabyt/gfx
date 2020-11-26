@@ -21,6 +21,8 @@ int main() {
 	return 0;
 }
 ```
+## Compiling
+`tcc example.c gfx.c -o foo -lX11 && ./foo`
 
 ## Credits
 Original code is from:  
