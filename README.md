@@ -10,7 +10,7 @@ int main() {
 	gfx_setColor(&window, 255, 0, 0);
 	gfx_pixel(&window, 10, 10);
 	
-	while(1) {
+	while (1) {
 		// Wait for the user to press a character.
 		struct gfx_interaction ia = gfx_event();
 		if (ia.type == KEY && ia.value == 'q') {
