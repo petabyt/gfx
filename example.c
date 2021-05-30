@@ -26,7 +26,7 @@ int main() {
 		}
 	}
 
-	gfx_flush(&window);
+	gfx_close(&window);
 	
 	return 0;
 }
