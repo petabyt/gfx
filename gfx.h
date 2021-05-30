@@ -1,6 +1,31 @@
+/*
+MIT License
+
+Copyright (c) 2020 Daniel C
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #ifndef GFX_H
 #define GFX_H
 
+#include <stdio.h>
 #include <X11/Xlib.h>
 #include <unistd.h>
 
@@ -14,6 +39,7 @@ struct gfx_interaction {
 	unsigned int coord[2];
 };
 
+// Size: 32
 struct gfx_window {
 	Window window;
 	GC canvas;
@@ -24,7 +50,7 @@ struct gfx_window {
 // This will be initialized when a window is opened.
 Display *gfx_display = NULL;
 
-// Flush all previous output to the window.
+// Flush draw requests to the window
 void gfx_flush() {
 	XFlush(gfx_display);
 }
@@ -40,7 +66,7 @@ struct gfx_window gfx_open(int width, int height, const char *title) {
 	// If returned empty
 	if(!gfx_display) {
 		fprintf(stderr, "gfx_open: unable to open the graphics window.\n");
-		exit(1);
+		return window;
 	}
 	
 	// Detect if display can do fast color mode.
@@ -70,35 +96,41 @@ struct gfx_window gfx_open(int width, int height, const char *title) {
 	XChangeWindowAttributes(gfx_display, window.window, CWBackingStore, &attr);
 	XStoreName(gfx_display, window.window, title);
 	
-	// Ask for user inputs
+	// Setup input
 	XSelectInput(gfx_display, window.window, StructureNotifyMask|KeyPressMask|ButtonPressMask);
 	
 	// Map the window
 	XMapWindow(gfx_display, window.window);
 
+	// Create graphics context
 	window.canvas = XCreateGC(gfx_display, window.window, 0, 0);
 
-	//
+	// Setup color
 	window.colors = DefaultColormap(gfx_display, 0);
 	XSetForeground(gfx_display, window.canvas, WhitePixel(gfx_display, DefaultScreen(gfx_display)));
 
 	// Wait for the MapNotify event
-	// Create infinite loop until done
 	while (1) {
 		XEvent e;
 		XNextEvent(gfx_display, &e);
-		if (e.type == MapNotify) {break;}
+		if (e.type == MapNotify) {
+			break;
+		}
 	}
 
 	return window;
 }
 
+// Plot a single pixel based on RGB
 void gfx_pixel(struct gfx_window *window, int x, int y) {
 	XDrawPoint(gfx_display, window->window, window->canvas, x, y);
+	gfx_flush(&window);
 }
 
+// Draw a line with whatever algorithm X11 uses
 void gfx_line(struct gfx_window *window, int x1, int y1, int x2, int y2) {
 	XDrawLine(gfx_display, window->window, window->canvas, x1, y1, x2, y2);
+	gfx_flush(&window);
 }
 
 // Change the current drawing color.
@@ -125,41 +157,8 @@ void gfx_clear(struct gfx_window *window) {
 	XClearWindow(gfx_display, window->window);
 }
 
-// Change the current background color.
-void gfx_setBackground(struct gfx_window *window, int r, int g, int b) {
-	XColor color;
-	color.pixel = 0;
-	color.red = r << 8;
-	color.green = g << 8;
-	color.blue = b << 8;
-	XAllocColor(gfx_display, window->colors, &color);
-
-	XSetWindowAttributes attr;
-	attr.background_pixel = color.pixel;
-	XChangeWindowAttributes(gfx_display, window->window, CWBackPixel, &attr);
-}
-
-int gfxEventWaiting() {
-	XEvent event;
-	
-	gfx_flush();
-	
-	while (1) {
-		if(XCheckMaskEvent(gfx_display, -1, &event)) {
-			if(event.type == KeyPress) {
-				XPutBackEvent(gfx_display, &event);
-				return 1;
-			} else if (event.type == ButtonPress) {
-				XPutBackEvent(gfx_display, &event);
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-	}
-}
-
 // Wait for the user to press a key or mouse button.
+// This does not check for a key
 struct gfx_interaction gfx_event() {
 	struct gfx_interaction interaction;
 	XEvent event;
@@ -184,4 +183,10 @@ struct gfx_interaction gfx_event() {
 	return interaction;
 }
 
-#endif GFX_H
+// Free all gfx resources
+void gfx_close(struct gfx_window *window) {
+	XFreeGC(gfx_display, window->canvas);
+	XCloseDisplay(gfx_display);
+}
+
+#endif
