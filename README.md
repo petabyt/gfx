@@ -18,6 +18,8 @@ int main() {
 		}
 	}
 	
+	gfx_close(&window);
+	
 	return 0;
 }
 ```
